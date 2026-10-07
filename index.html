@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>和モダン カジノ - チンチロ・ルーレット・ポーカー</title>
+    <style>
+        :root {
+            --bg-color: #0f1412;
+            --gold: #d4af37;
+            --gold-bright: #fff0a5;
+            --red: #c0392b;
+            --text-light: #f5f5f7;
+            --panel-bg: rgba(28, 38, 33, 0.85);
+            --border-gold: rgba(212, 175, 55, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Sawarabi Mincho', serif;
+            background: radial-gradient(circle at center, #1a2520 0%, #0a0d0b 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        /* --- タブ切り替えナビゲーション --- */
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px;
+            border-radius: 40px;
+            border: 1px solid var(--border-gold);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #8a9a86;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            border-radius: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--gold);
+            color: #0f1412;
+            font-weight: bold;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+        }
+
+        .tab-icon {
+            font-size: 1.1rem;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-gold);
+            padding: 8px 25px;
+            border-radius: 30px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #a0b09d;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--gold-bright);
+        }
+
+        /* ゲーム表示エリアの切り替え */
+        .game-view {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-view.active {
+            display: flex;
+        }
+
+        /* --- チンチロ用スタイル --- */
+        .bowl-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle at center, #2d3e35 0%, #111814 80%);
+            border-radius: 50%;
+            border: 10px solid #3a2a1a;
+            box-shadow: 
+                inset 0 0 40px rgba(0,0,0,0.8),
+                0 0 0 3px var(--gold),
+                0 15px 35px rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .bowl-inner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .dice {
+            width: 45px;
+            height: 45px;
+            background: #fdfbf7;
+            border-radius: 8px;
+            box-shadow: inset -3px -3px 6px rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.4);
+            display: grid;
+            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+            padding: 5px;
+            transition: transform 0.1s ease;
+        }
+
+        .dice.rolling {
+            animation: roll 0.15s infinite linear;
+        }
+
+        @keyframes roll {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.05); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        .dot {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: transparent;
+            justify-self: center;
+            align-self: center;
+        }
+
+        .pip-1 .dot:nth-child(5) { background: var(--red); width: 130%; height: 130%; }
+        .pip-2 .dot:nth-child(1), .pip-2 .dot:nth-child(9) { background: #222; }
+        .pip-3 .dot:nth-child(1), .pip-3 .dot:nth-child(5), .pip-3 .dot:nth-child(9) { background: #222; }
+        .pip-4 .dot:nth-child(1), .pip-4 .dot:nth-child(3), .pip-4 .dot:nth-child(7), .pip-4 .dot:nth-child(9) { background: #222; }
+        .pip-5 .dot:nth-child(1), .pip-5 .dot:nth-child(3), .pip-5 .dot:nth-child(5), .pip-5 .dot:nth-child(7), .pip-5 .dot:nth-child(9) { background: #222; }
+        .pip-6 .dot:nth-child(1), .pip-6 .dot:nth-child(3), .pip-6 .dot:nth-child(4), .pip-6 .dot:nth-child(6), .pip-6 .dot:nth-child(7), .pip-6 .dot:nth-child(9) { background: #222; }
+
+        /* --- ルーレット用スタイル --- */
+        .roulette-wrapper {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 10px 0;
+        }
+
+        .roulette-pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 24px solid var(--gold-bright);
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+        }
+
+        .roulette-wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #3a2a1a;
+            box-shadow: 0 0 0 3px var(--gold), 0 10px 25px rgba(0,0,0,0.7);
+            position: relative;
+            transition: transform 4s cubic-bezier(0.15, 0.9, 0.15, 1);
+        }
+
+        .roulette-bet-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .roulette-btn {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-gold);
+            color: var(--text-light);
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .roulette-btn.selected {
+            background: var(--gold);
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* --- ポーカー用スタイル --- */
+        .poker-cards-container {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin: 15px 0;
+            width: 100%;
+        }
+
+        .card {
+            width: 65px;
+            height: 95px;
+            background: #fff;
+            border-radius: 6px;
+            border: 2px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .card.selected {
+            transform: translateY(-10px);
+            border: 3px solid var(--gold);
+            box-shadow: 0 0 15px var(--gold);
+        }
+
+        .card.red { color: #c0392b; }
+        .card.black { color: #2c3e50; }
+
+        .card .hold-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gold);
+            color: #000;
+            font-size: 0.65rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .card.selected .hold-badge {
+            display: block;
+        }
+
+        .card-corner { font-size: 0.85rem; line-height: 1; }
+        .card-center { font-size: 1.5rem; text-align: center; align-self: center; }
+
+        .poker-btn-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .secondary-btn {
+            background: #3a2a1a;
+            border: 1px solid var(--gold);
+            color: var(--gold-bright);
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* --- 共通 UI --- */
+        .result-banner {
+            min-height: 48px;
+            text-align: center;
+            margin: 5px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .yaku-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--gold-bright);
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .yaku-name.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .yaku-desc {
+            font-size: 0.8rem;
+            color: #d0d0d0;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .bet-selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-gold);
+            border-radius: 8px;
+            padding: 6px 12px;
+        }
+
+        .bet-btn {
+            background: #2a3a32;
+            border: 1px solid var(--gold);
+            color: var(--gold-bright);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.2rem;
+            font-family: inherit;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #101512;
+            background: linear-gradient(135deg, #f3e08f 0%, #d4af37 50%, #aa820a 100%);
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:disabled {
+            background: #444;
+            color: #888;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .log-container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(15, 20, 18, 0.8);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 10px;
+            max-height: 80px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+        }
+
+        .log-title {
+            color: var(--gold);
+            margin-bottom: 4px;
+            border-bottom: 1px dashed rgba(212, 175, 55, 0.3);
+        }
+
+        .log-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+            color: #bbb;
+        }
+        .log-item.win { color: #82e0aa; }
+        .log-item.lose { color: #f1948a; }
+
+        footer {
+            font-size: 0.7rem;
+            color: #556655;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- タブアイコン切り替えナビ -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('chinchiro')">
+            <span class="tab-icon">🎲</span> チンチロ
+        </button>
+        <button class="tab-btn" onclick="switchTab('roulette')">
+            <span class="tab-icon">🎡</span> ルーレット
+        </button>
+        <button class="tab-btn" onclick="switchTab('poker')">
+            <span class="tab-icon">🃏</span> ポーカー
+        </button>
+    </div>
+
+    <!-- 共通ステータス -->
+    <div class="status-bar">
+        <div class="stat-item">
+            <span class="stat-label">所持金</span>
+            <span class="stat-value" id="balance">1,000点</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">勝敗</span>
+            <span class="stat-value" id="record">0勝 0敗</span>
+        </div>
+    </div>
+
+    <!-- 共通賭け金コントロール -->
+    <div style="width: 100%; max-width: 400px; margin-bottom: 10px;">
+        <div class="bet-selector">
+            <button class="bet-btn" onclick="changeBet(-50)">-50</button>
+            <span>賭け金: <strong id="betAmount" style="color:var(--gold-bright);">100</strong>点</span>
+            <button class="bet-btn" onclick="changeBet(50)">+50</button>
+        </div>
+    </div>
+
+    <!-- 1. チンチロ画面 -->
+    <div id="view-chinchiro" class="game-view active">
+        <div class="bowl-container">
+            <div class="bowl-inner">
+                <div class="dice pip-1" id="dice1">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+                <div class="dice pip-2" id="dice2">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+                <div class="dice pip-3" id="dice3">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-banner">
+            <div class="yaku-name" id="ccYakuName">いざ勝負！</div>
+            <div class="yaku-desc" id="ccYakuDesc">賽を振ってください</div>
+        </div>
+
+        <div class="controls">
+            <button class="action-btn" id="ccRollBtn" onclick="playChinchiro()">賽を振る！</button>
+        </div>
+    </div>
+
+    <!-- 2. ルーレット画面 -->
+    <div id="view-roulette" class="game-view">
+        <div class="roulette-wrapper">
+            <div class="roulette-pointer"></div>
+            <canvas id="rouletteCanvas" class="roulette-wheel" width="250" height="250"></canvas>
+        </div>
+
+        <div class="roulette-bet-options">
+            <button class="roulette-btn selected" onclick="selectRouletteBet('red', this)">赤 (2倍)</button>
+            <button class="roulette-btn" onclick="selectRouletteBet('black', this)">黒 (2倍)</button>
+            <button class="roulette-btn" onclick="selectRouletteBet('even', this)">偶数 (2倍)</button>
+            <button class="roulette-btn" onclick="selectRouletteBet('odd', this)">奇数 (2倍)</button>
+            <button class="roulette-btn" onclick="selectRouletteBet('7', this)">「7」 (8倍)</button>
+            <button class="roulette-btn" onclick="selectRouletteBet('0', this)">「0」 (8倍)</button>
+        </div>
+
+        <div class="result-banner">
+            <div class="yaku-name" id="rtYakuName">ルーレット</div>
+            <div class="yaku-desc" id="rtYakuDesc">賭け先を選んで回してください</div>
+        </div>
+
+        <div class="controls">
+            <button class="action-btn" id="rtSpinBtn" onclick="playRoulette()">回す！</button>
+        </div>
+    </div>
+
+    <!-- 3. ポーカー画面 -->
+    <div id="view-poker" class="game-view">
+        <div class="poker-cards-container" id="pokerCardContainer">
+            <!-- JavaScriptでカード生成 -->
+        </div>
+
+        <div class="result-banner">
+            <div class="yaku-name" id="pkYakuName">ポーカー</div>
+            <div class="yaku-desc" id="pkYakuDesc">「配る」を押してカードを引きます</div>
+        </div>
+
+        <div class="controls">
+            <div class="poker-btn-group">
+                <button class="action-btn" id="pkActionBtn" onclick="handlePokerAction()">カードを配る</button>
+                <button class="secondary-btn" id="pkStandBtn" onclick="finishPokerHand()" style="display: none;">この手札で勝負</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 履歴ログ -->
+    <div class="log-container">
+        <div class="log-title">【対局履歴】</div>
+        <div id="logList"></div>
+    </div>
+
+    <footer>※ページを再読み込みすると所持金と履歴は初期化されます</footer>
+
+    <script>
+        // 状態管理
+        let balance = 1000;
+        let bet = 100;
+        let wins = 0;
+        let losses = 0;
+        let isPlaying = false;
+
+        // ルーレット用
+        let selectedRouletteBet = 'red';
+        let currentWheelRotation = 0;
+
+        // ポーカー用 (最大3回交換対応)
+        let pokerState = 'DEAL'; // 'DEAL' or 'DRAW'
+        let pokerDeck = [];
+        let pokerHand = [];
+        let pokerHoldState = [false, false, false, false, false];
+        let drawsLeft = 3;
+
+        const rouletteSlices = [
+            { label: '0', color: '#27ae60', type: 'green', val: 0 },
+            { label: '1', color: '#c0392b', type: 'red', val: 1 },
+            { label: '2', color: '#2c3e50', type: 'black', val: 2 },
+            { label: '3', color: '#c0392b', type: 'red', val: 3 },
+            { label: '4', color: '#2c3e50', type: 'black', val: 4 },
+            { label: '5', color: '#c0392b', type: 'red', val: 5 },
+            { label: '6', color: '#2c3e50', type: 'black', val: 6 },
+            { label: '7', color: '#f39c12', type: 'gold', val: 7 },
+        ];
+
+        // Web Audio API による効果音生成
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            return audioCtx;
+        }
+
+        function playDiceSound() {
+            const ctx = getAudioContext();
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300 + Math.random() * 800, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.05);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.05);
+                }, i * 70 + Math.random() * 30);
+            }
+        }
+
+        function playWinSound() {
+            const ctx = getAudioContext();
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.1);
+            osc.frequency.setValueAtTime(783.99, now + 0.2);
+            osc.frequency.setValueAtTime(1046.50, now + 0.3);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(now + 0.6);
+        }
+
+        // タブ切り替え
+        function switchTab(tab) {
+            if (isPlaying && pokerState === 'DRAW') return; // ポーカーの交換待機中は切り替え不可
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.game-view').forEach(v => v.classList.remove('active'));
+
+            if (tab === 'chinchiro') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('view-chinchiro').classList.add('active');
+            } else if (tab === 'roulette') {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('view-roulette').classList.add('active');
+                drawRouletteWheel();
+            } else {
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                document.getElementById('view-poker').classList.add('active');
+                if(pokerHand.length === 0) renderEmptyCards();
+            }
+        }
+
+        // 賭け金変更
+        function changeBet(amount) {
+            if (isPlaying) return;
+            bet = Math.max(50, Math.min(balance, bet + amount));
+            document.getElementById('betAmount').innerText = bet;
+        }
+
+        // --- チンチロのロジック ---
+        function evaluateChinchiroHand(d1, d2, d3) {
+            const dice = [d1, d2, d3].sort((a, b) => a - b);
+            if (Math.random() < 0.03) return { name: "ションベン", mult: -2, desc: "賽が茶碗から出た！" };
+            if (dice[0] === 1 && dice[1] === 1 && dice[2] === 1) return { name: "ピンゾロ！", mult: 5, desc: "最強の役！5倍付け！" };
+            if (dice[0] === dice[1] && dice[1] === dice[2]) return { name: `${dice[0]}のゾロ目！`, mult: 3, desc: "嵐！3倍付け！" };
+            if (dice[0] === 4 && dice[1] === 5 && dice[2] === 6) return { name: "シゴロ！", mult: 2, desc: "吉役！2倍付け！" };
+            if (dice[0] === 1 && dice[1] === 2 && dice[2] === 3) return { name: "ヒフミ…", mult: -2, desc: "凶役…2倍払い" };
+            if (dice[0] === dice[1]) return evaluatePoint(dice[2]);
+            if (dice[1] === dice[2]) return evaluatePoint(dice[0]);
+            return { name: "目なし", mult: -1, desc: "役なし… 1倍払い" };
+        }
+
+        function evaluatePoint(pt) {
+            if (pt >= 4) return { name: `${pt}の目`, mult: 1, desc: "勝利！" };
+            return { name: `${pt}の目`, mult: -1, desc: "負け…" };
+        }
+
+        function playChinchiro() {
+            if (isPlaying || balance < bet) {
+                if (balance < bet) alert("所持金が足りません！");
+                return;
+            }
+            isPlaying = true;
+            toggleButtons(true);
+
+            const diceEls = [document.getElementById('dice1'), document.getElementById('dice2'), document.getElementById('dice3')];
+            diceEls.forEach(d => d.classList.add('rolling'));
+            playDiceSound();
+
+            const yakuNameEl = document.getElementById('ccYakuName');
+            const yakuDescEl = document.getElementById('ccYakuDesc');
+            yakuNameEl.classList.remove('show');
+            yakuDescEl.innerText = "ガラガラガラ…";
+
+            setTimeout(() => {
+                const v1 = Math.floor(Math.random() * 6) + 1;
+                const v2 = Math.floor(Math.random() * 6) + 1;
+                const v3 = Math.floor(Math.random() * 6) + 1;
+
+                diceEls.forEach((d, i) => {
+                    d.classList.remove('rolling');
+                    d.className = `dice pip-${[v1, v2, v3][i]}`;
+                });
+
+                const result = evaluateChinchiroHand(v1, v2, v3);
+                processResult(result.mult, `[チンチロ] ${result.name}`, result.desc, yakuNameEl, yakuDescEl);
+            }, 1000);
+        }
+
+        // --- ルーレットのロジック ---
+        function drawRouletteWheel() {
+            const canvas = document.getElementById('rouletteCanvas');
+            if (!canvas.getContext) return;
+            const ctx = canvas.getContext('2d');
+            const numSlices = rouletteSlices.length;
+            const anglePerSlice = (2 * Math.PI) / numSlices;
+
+            ctx.clearRect(0, 0, 250, 250);
+
+            for (let i = 0; i < numSlices; i++) {
+                const startAngle = i * anglePerSlice;
+                const endAngle = startAngle + anglePerSlice;
+
+                ctx.beginPath();
+                ctx.moveTo(125, 125);
+                ctx.arc(125, 125, 115, startAngle, endAngle);
+                ctx.fillStyle = rouletteSlices[i].color;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#d4af37';
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(125, 125);
+                ctx.rotate(startAngle + anglePerSlice / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 16px sans-serif";
+                ctx.fillText(rouletteSlices[i].label, 95, 5);
+                ctx.restore();
+            }
+        }
+
+        function selectRouletteBet(type, btn) {
+            if (isPlaying) return;
+            selectedRouletteBet = type;
+            document.querySelectorAll('.roulette-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        function playRoulette() {
+            if (isPlaying || balance < bet) {
+                if (balance < bet) alert("所持金が足りません！");
+                return;
+            }
+            isPlaying = true;
+            toggleButtons(true);
+
+            const wheel = document.getElementById('rouletteCanvas');
+            const yakuNameEl = document.getElementById('rtYakuName');
+            const yakuDescEl = document.getElementById('rtYakuDesc');
+            
+            yakuNameEl.classList.remove('show');
+            yakuDescEl.innerText = "回転中…";
+
+            const numSlices = rouletteSlices.length;
+            const winningIndex = Math.floor(Math.random() * numSlices);
+            const sliceDegrees = 360 / numSlices;
+            
+            const targetDegree = 270 - (winningIndex * sliceDegrees + sliceDegrees / 2);
+            const extraRounds = (5 + Math.floor(Math.random() * 3)) * 360;
+            currentWheelRotation += extraRounds + (targetDegree - (currentWheelRotation % 360));
+
+            wheel.style.transform = `rotate(${currentWheelRotation}deg)`;
+
+            setTimeout(() => {
+                const hit = rouletteSlices[winningIndex];
+                let isWin = false;
+                let mult = -1;
+
+                if (selectedRouletteBet === 'red' && hit.type === 'red') { isWin = true; mult = 1; }
+                else if (selectedRouletteBet === 'black' && hit.type === 'black') { isWin = true; mult = 1; }
+                else if (selectedRouletteBet === 'even' && hit.val !== 0 && hit.val % 2 === 0) { isWin = true; mult = 1; }
+                else if (selectedRouletteBet === 'odd' && hit.val % 2 !== 0) { isWin = true; mult = 1; }
+                else if (selectedRouletteBet === '7' && hit.val === 7) { isWin = true; mult = 7; }
+                else if (selectedRouletteBet === '0' && hit.val === 0) { isWin = true; mult = 7; }
+
+                const desc = `当選: 「${hit.label}」`;
+                const name = isWin ? "的中！" : "ハズレ…";
+
+                processResult(mult, `[ルーレット] ${name}`, desc, yakuNameEl, yakuDescEl);
+            }, 4000);
+        }
+
+        // --- ポーカーのロジック (3回ドロー対応) ---
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+        function createDeck() {
+            let deck = [];
+            for (let s of suits) {
+                for (let v of values) {
+                    deck.push({ suit: s, value: v, rank: values.indexOf(v) + 2, isRed: s === '♥' || s === '♦' });
+                }
+            }
+            return deck.sort(() => Math.random() - 0.5);
+        }
+
+        function renderEmptyCards() {
+            const container = document.getElementById('pokerCardContainer');
+            container.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                container.innerHTML += `<div class="card" style="background:#2a3a32; justify-content:center; align-items:center; color:#556655;">🎴</div>`;
+            }
+        }
+
+        function renderPokerCards() {
+            const container = document.getElementById('pokerCardContainer');
+            container.innerHTML = '';
+            pokerHand.forEach((card, i) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = `card ${card.isRed ? 'red' : 'black'} ${pokerHoldState[i] ? 'selected' : ''}`;
+                cardEl.onclick = () => toggleHold(i);
+                cardEl.innerHTML = `
+                    <div class="hold-badge">HOLD</div>
+                    <div class="card-corner">${card.value}<br>${card.suit}</div>
+                    <div class="card-center">${card.suit}</div>
+                    <div class="card-corner" style="transform: rotate(180deg);">${card.value}<br>${card.suit}</div>
+                `;
+                container.appendChild(cardEl);
+            });
+        }
+
+        function toggleHold(index) {
+            if (pokerState !== 'DRAW') return;
+            pokerHoldState[index] = !pokerHoldState[index];
+            renderPokerCards();
+        }
+
+        function handlePokerAction() {
+            if (pokerState === 'DEAL') {
+                if (balance < bet) { alert("所持金が足りません！"); return; }
+                isPlaying = true;
+                pokerDeck = createDeck();
+                pokerHand = pokerDeck.splice(0, 5);
+                pokerHoldState = [false, false, false, false, false];
+                drawsLeft = 3;
+                
+                renderPokerCards();
+                pokerState = 'DRAW';
+                document.getElementById('pkActionBtn').innerText = `カードを交換 (残り${drawsLeft}回)`;
+                document.getElementById('pkStandBtn').style.display = 'inline-block';
+                document.getElementById('pkYakuName').classList.remove('show');
+                document.getElementById('pkYakuDesc').innerText = "残すカード(HOLD)をタップで選択してください";
+            } else if (pokerState === 'DRAW') {
+                // カード交換
+                for (let i = 0; i < 5; i++) {
+                    if (!pokerHoldState[i]) {
+                        pokerHand[i] = pokerDeck.pop();
+                    }
+                }
+                // HOLD選択をリセット
+                pokerHoldState = [false, false, false, false, false];
+                renderPokerCards();
+                
+                drawsLeft--;
+
+                if (drawsLeft > 0) {
+                    document.getElementById('pkActionBtn').innerText = `カードを交換 (残り${drawsLeft}回)`;
+                    document.getElementById('pkYakuDesc').innerText = `交換しました。残すカードを選択してください (残り${drawsLeft}回)`;
+                } else {
+                    finishPokerHand();
+                }
+            }
+        }
+
+        function finishPokerHand() {
+            const result = evaluatePokerHand(pokerHand);
+            const yakuNameEl = document.getElementById('pkYakuName');
+            const yakuDescEl = document.getElementById('pkYakuDesc');
+
+            processResult(result.mult, `[ポーカー] ${result.name}`, result.desc, yakuNameEl, yakuDescEl);
+
+            pokerState = 'DEAL';
+            document.getElementById('pkActionBtn').innerText = "カードを配る";
+            document.getElementById('pkStandBtn').style.display = 'none';
+        }
+
+        function evaluatePokerHand(hand) {
+            const ranks = hand.map(c => c.rank).sort((a, b) => a - b);
+            const suits = hand.map(c => c.suit);
+            
+            const isFlush = suits.every(s => s === suits[0]);
+            const isStraight = ranks.every((r, i) => i === 0 || r === ranks[i - 1] + 1) || 
+                              (ranks[0] === 2 && ranks[1] === 3 && ranks[2] === 4 && ranks[3] === 5 && ranks[4] === 14);
+
+            const counts = {};
+            ranks.forEach(r => counts[r] = (counts[r] || 0) + 1);
+            const countValues = Object.values(counts).sort((a, b) => b - a);
+
+            if (isFlush && isStraight && ranks[0] === 10) return { name: "ロイヤルストレートフラッシュ", mult: 50, desc: "奇跡の役！50倍付け！" };
+            if (isFlush && isStraight) return { name: "ストレートフラッシュ", mult: 25, desc: "大勝利！25倍付け！" };
+            if (countValues[0] === 4) return { name: "フォーカード", mult: 15, desc: "15倍付け！" };
+            if (countValues[0] === 3 && countValues[1] === 2) return { name: "フルハウス", mult: 8, desc: "8倍付け！" };
+            if (isFlush) return { name: "フラッシュ", mult: 5, desc: "5倍付け！" };
+            if (isStraight) return { name: "ストレート", mult: 4, desc: "4倍付け！" };
+            if (countValues[0] === 3) return { name: "スリーカード", mult: 2, desc: "2倍付け！" };
+            if (countValues[0] === 2 && countValues[1] === 2) return { name: "ツーペア", mult: 1, desc: "1倍付け！(プラスマイナスゼロ)" };
+            if (countValues[0] === 2 && hand.some(c => counts[c.rank] === 2 && c.rank >= 11)) {
+                return { name: "ワンペア (J以上)", mult: 1, desc: "1倍付け！" };
+            }
+
+            return { name: "役なし", mult: -1, desc: "1倍払い" };
+        }
+
+        // --- 勝敗結果の共通処理 ---
+        function processResult(mult, name, desc, nameEl, descEl) {
+            const payout = bet * mult;
+            balance += payout;
+
+            if (payout > 0) {
+                wins++;
+                playWinSound();
+            } else if (payout < 0) {
+                losses++;
+            }
+
+            document.getElementById('balance').innerText = balance.toLocaleString() + "点";
+            document.getElementById('record').innerText = `${wins}勝 ${losses}敗`;
+
+            nameEl.innerText = name;
+            descEl.innerText = `${desc} (${payout >= 0 ? '+' : ''}${payout}点)`;
+            nameEl.classList.add('show');
+
+            addLog(name, payout);
+
+            if (bet > balance) {
+                bet = Math.max(50, balance);
+                document.getElementById('betAmount').innerText = bet;
+            }
+
+            isPlaying = false;
+            toggleButtons(false);
+
+            if (balance <= 0) {
+                descEl.innerText = "破産しました… ページを再読み込みしてください。";
+                toggleButtons(true);
+            }
+        }
+
+        function toggleButtons(disabled) {
+            document.getElementById('ccRollBtn').disabled = disabled;
+            document.getElementById('rtSpinBtn').disabled = disabled;
+        }
+
+        function addLog(name, payout) {
+            const logList = document.getElementById('logList');
+            const item = document.createElement('div');
+            item.className = `log-item ${payout >= 0 ? 'win' : 'lose'}`;
+            item.innerHTML = `
+                <span>${name}</span>
+                <span>${payout >= 0 ? '+' : ''}${payout}点</span>
+            `;
+            logList.insertBefore(item, logList.firstChild);
+        }
+
+        window.onload = () => {
+            drawRouletteWheel();
+            renderEmptyCards();
+        };
+    </script>
+</body>
+</html>
